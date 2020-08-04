@@ -1,0 +1,50 @@
+- name: Docker Setup
+  hosts: host1
+  tasks:
+   - name: Docker Repo
+     yum_repository:
+       name: docker
+       description: Docker yum repo
+       baseurl: https://download.docker.com/linux/centos/7/x86_64/stable
+       gpgcheck: no
+
+   - name: Docker installation
+     package:
+       name: docker-ce
+       state: present
+
+   - name: install through docker
+     command: pip3 install docker-py
+     ignore_errors: true
+
+   - name: httpd image
+     docker_image:
+       name: "httpd"
+       source: pull
+   - name: disable selinux
+     command: "setenforce 0"
+
+   - name: create directory if not present
+     file:
+      path: /webansi
+      state: directory
+
+   - name: copy html file
+     copy:
+       src: "home.html"
+       dest: "/webansi/"
+       register: q
+
+   - debug:
+       var: q.failed
+
+   - name: launch httpd container
+     docker_container:
+             name: ansiserver
+             image: "httpd"
+             volumes:
+                - /webansi:/usr/local/apache2/htdocs/
+             exposed_ports:
+                     - "85"
+ 	     ports:
+                     - "8686:80"
